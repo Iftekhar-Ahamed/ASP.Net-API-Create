@@ -17,11 +17,12 @@ namespace Assignment.Repository
     {
         private readonly WriteDbContext _contextW;
         private readonly ReadDbContext _contextR;
-        private IAssignment _IAassignment;
-        public AssignmentRepository(WriteDbContext contextW, ReadDbContext contextR)
+        private readonly IJwtToken _JwtToken;
+        public AssignmentRepository(WriteDbContext contextW, ReadDbContext contextR, IJwtToken jwtToken)
         {
             _contextW = contextW;
             _contextR = contextR;
+            _JwtToken = jwtToken;
         }
 
         public async Task<MessageHelper> AddNewPartnerType(PartnerTypeDto ob)
@@ -235,6 +236,8 @@ namespace Assignment.Repository
                 foreach (var item in sd)
                 {
                     var tblItem = await _contextW.TblItem.Where(x => x.IntItemId == item.IntItemId).FirstOrDefaultAsync();
+                    //var tblItem = await (from i in _contextW.TblItem where i.IntItemId == item.IntItemId select i).FirstOrDefaultAsync();
+
                     if (tblItem.NumStockQuantity >= item.NumItemQuantity)
                     {
                         var _sdTbl = new TblSalesDetails
@@ -595,6 +598,26 @@ namespace Assignment.Repository
                        ).ToListAsync();
             msg.Value.AddRange(res);
             return msg;
+        }
+
+        public async Task<TMessageHelper<string>> AuthenticateUser(UserDto user)
+        {
+            TMessageHelper<string> messageHelper = new TMessageHelper<string>();
+            messageHelper.statuscode = 200;
+            messageHelper.Message = "Faild";
+
+            var res = await (from u in _contextR.TblUser where user.UserName == u.UserName && user.PassWord == u.PassWord select u).FirstOrDefaultAsync();
+            if (res == null)
+            {
+                messageHelper.Message = "WRONG USER NAME OR PASSWORD";
+            }
+            else
+            {
+                messageHelper.Message = "Sucessfully LogIn";
+                user.UserId = res.UserId;
+                messageHelper.Value = _JwtToken.GenerateToken(user);
+            }
+            return messageHelper;
         }
     }
 }

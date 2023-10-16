@@ -6,6 +6,7 @@ using Assignment.DTO;
 using System.Collections.Generic;
 using Assignment.Helper;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Assignment.Controllers
 {
@@ -18,6 +19,7 @@ namespace Assignment.Controllers
         {
             _IRepository = IRepository;
         }
+        
         [HttpPost]
         [Route("CreatePartnerType")]
         public async Task<IActionResult> CreatePartnerType(PartnerTypeDto ob)
@@ -78,6 +80,15 @@ namespace Assignment.Controllers
         {
             return Ok(await _IRepository.GETMonthlyPurchaseVSSalesReport());
         }
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("AuthenticateUser")]
+        public async Task<IActionResult> AuthenticateUser(UserDto usr)
+        {
+            return Ok(await _IRepository.AuthenticateUser(usr));
+        }
+
+        [Authorize]
         [HttpGet]
         [Route("PracticeGroupBy")]
         public async Task<IActionResult> PracticeGroupBy()

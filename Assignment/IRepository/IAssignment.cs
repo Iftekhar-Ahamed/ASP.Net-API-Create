@@ -21,5 +21,6 @@ namespace Assignment.IRepository
         Task<TMessageHelper<List<DailyPurchaseSalesReportDto>>> GetItemWiseDailyPurchase_VS_SalesReport(string day);
         Task<TMessageHelper<List<MonthReportDto>>> GETMonthlyPurchaseVSSalesReport();
         Task<TMessageHelper<List<PurchaseDetailsDto>>> PracticeGroupBy();
+        Task<TMessageHelper<string>> AuthenticateUser(UserDto user);
     }
 }

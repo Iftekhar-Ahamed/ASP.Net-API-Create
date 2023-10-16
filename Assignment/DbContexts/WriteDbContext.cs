@@ -27,6 +27,7 @@ namespace Assignment.DbContexts
         public virtual DbSet<TblPurchaseDetails> TblPurchaseDetails { get; set; }
         public virtual DbSet<TblSales> TblSales { get; set; }
         public virtual DbSet<TblSalesDetails> TblSalesDetails { get; set; }
+        public virtual DbSet<TblUser> TblUser { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -171,6 +172,28 @@ namespace Assignment.DbContexts
                 entity.Property(e => e.NumUnitPrice)
                     .HasColumnName("numUnitPrice")
                     .HasColumnType("decimal(12, 6)");
+            });
+
+            modelBuilder.Entity<TblUser>(entity =>
+            {
+                entity.HasKey(e => e.UserName);
+
+                entity.ToTable("tblUser");
+
+                entity.Property(e => e.UserName)
+                    .HasColumnName("userName")
+                    .HasMaxLength(30)
+                    .IsFixedLength();
+
+                entity.Property(e => e.PassWord)
+                    .IsRequired()
+                    .HasColumnName("passWord")
+                    .HasMaxLength(10)
+                    .IsFixedLength();
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("userId")
+                    .HasColumnType("decimal(18, 0)");
             });
 
             OnModelCreatingPartial(modelBuilder);
