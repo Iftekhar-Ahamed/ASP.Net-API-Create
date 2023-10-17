@@ -13,42 +13,74 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
+using System.Security.Principal;
 
 namespace Assignment.Repository
 {
     public class JwtTokenRepository:IJwtToken
     {
-        private string _secretKey;
-        public JwtTokenRepository(string secrateKey)
+        IConfiguration _configuration;
+        public JwtTokenRepository(IConfiguration configuration)
         {
-            _secretKey=secrateKey;
+            _configuration = configuration;
         }
         
-        public string GenerateToken(UserDto user)
+        public string GenerateToken(UserDto _userData)
         {
+            var claims = new[] {
+                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                        new Claim("UserId", _userData.UserId.ToString()),
+                        //new Claim("DisplayName", "Iftekhar"),
+                        //new Claim("UserName", "Ïftekhar Ahamed Siddiquee"),
+                        //new Claim("Email", "iftekhar@ibos.io")
+                    };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_secretKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.UtcNow.AddMinutes(2),
+                signingCredentials: signIn);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        public bool CheckTimeExpire(ClaimsIdentity identity)
+        {
+            if (identity != null)
             {
-                Subject = new ClaimsIdentity(new[]
+                // Find the 'exp' claim (expiration time)
+                var expirationClaim = identity.FindFirst("exp");
+
+                if (expirationClaim != null && long.TryParse(expirationClaim.Value, out var expirationTime))
                 {
-                new Claim(ClaimTypes.NameIdentifier, "1")
-            }),
-                Expires = DateTime.Now.AddMinutes(10),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
-            };
-            
-            try
-            {
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                return tokenHandler.WriteToken(token);
-            }
-            catch (Exception ex)
-            {
+                    // Convert the Unix timestamp to a DateTime
+                    var expirationDateTime = DateTimeOffset.FromUnixTimeSeconds(expirationTime).DateTime;
 
+                    // Get the current time
+                    var currentTime = DateTime.UtcNow;
+
+                    if (currentTime < expirationDateTime)
+                    {
+                        // JWT is still valid
+                        return true;
+                    }
+                    else
+                    {
+                        // JWT has expired
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
             }
-            return string.Empty;
+
+            return false;
         }
     }
 

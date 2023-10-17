@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Assignment.Helper;
 using System;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Assignment.Controllers
 {
@@ -15,9 +16,11 @@ namespace Assignment.Controllers
     public class AssignmentController : ControllerBase
     {
         private readonly IAssignment _IRepository;
-        public AssignmentController(IAssignment IRepository)
+        private readonly IJwtToken _IJwtTokenRepository;
+        public AssignmentController(IAssignment IRepository,IJwtToken jwtToken)
         {
             _IRepository = IRepository;
+            _IJwtTokenRepository = jwtToken;
         }
         
         [HttpPost]
@@ -93,7 +96,10 @@ namespace Assignment.Controllers
         [Route("PracticeGroupBy")]
         public async Task<IActionResult> PracticeGroupBy()
         {
-            return Ok(await _IRepository.PracticeGroupBy());
+            if(_IJwtTokenRepository.CheckTimeExpire(User.Identity as ClaimsIdentity)){
+                return Ok(await _IRepository.PracticeGroupBy());
+            }
+            return BadRequest("User not authenticated");
         }
     }
 }
